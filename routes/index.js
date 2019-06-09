@@ -1,7 +1,8 @@
 var express = require('express')
 var router = express.Router()
 
-const { User } = require('../models')
+const { User, Sequelize } = require('../models')
+const Op = Sequelize.Op
 
 /* GET home page. */
 router.get('/', async (req, res, next) => {
@@ -11,27 +12,51 @@ router.get('/', async (req, res, next) => {
     const AllUser = JSON.stringify(data)
     return JSON.parse(AllUser)
   })
-  res.send({
-    message: 'success',
-    dataContacts: getAllData
-  })
+  if (!getAllData.length) {
+    res.send({
+      message: 'data not there'
+    })
+  } else {
+    res.send({
+      message: 'get Data success',
+      dataContacts: getAllData
+    })
+  }
 })
 router.post('/', async (req, res) => {
-  console.log(req.body)
-  const postSuccess = await User.create({
-    ...req.body
-  }).then(postResult => {
-    const result = JSON.stringify(postResult)
-    // console.log(JSON.parse(result))
-
-    return JSON.parse(result)
+  let AllData = await User.findOne({
+    where: {
+      [Op.or]: [{ email: req.body.email }, { phone: req.body.phone }]
+    }
+  }).then(data => {
+    const getData = JSON.stringify(data)
+    const result = JSON.parse(getData)
+    if (result === null) {
+      return result
+    } else {
+      return [result]
+    }
   })
-  let { createdAt, updatedAt, ...result } = postSuccess
+  if (!AllData) {
+    const postSuccess = await User.create({
+      ...req.body
+    }).then(postResult => {
+      const result = JSON.stringify(postResult)
+      // console.log(JSON.parse(result))
 
-  res.send({
-    message: 'post success',
-    newData: result
-  })
+      return JSON.parse(result)
+    })
+    let { createdAt, updatedAt, ...result } = postSuccess
+
+    res.send({
+      message: 'post success',
+      newData: result
+    })
+  } else {
+    res.send({
+      message: 'data is ready exists'
+    })
+  }
 })
 
 module.exports = router
