@@ -59,4 +59,31 @@ router.post('/', async (req, res) => {
   }
 })
 
+router.delete('/delete/:id', async (req, res) => {
+  const id = Number(req.params.id)
+
+  await User.destroy({
+    where: {
+      id: id
+    }
+  }).then(async data => {
+    if (!data) {
+      res.send({
+        message: 'id not There'
+      })
+    } else {
+      let getAll = await User.findAll({
+        attributes: ['id', 'fullName', 'email', 'phone']
+      }).then(data => {
+        const AllUser = JSON.stringify(data)
+        return JSON.parse(AllUser)
+      })
+      res.send({
+        message: 'deleted success',
+        newData: getAll
+      })
+    }
+  })
+})
+
 module.exports = router
